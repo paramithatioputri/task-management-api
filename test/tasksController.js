@@ -2,7 +2,7 @@ const expect = require("chai").expect;
 const mongoose = require("mongoose");
 const Task = require("../models/task");
 const TaskController = require("../controllers/tasks");
-const sinon = require('sinon');
+const sinon = require("sinon");
 
 describe("Tasks Controller", () => {
   before((done) => {
@@ -85,9 +85,9 @@ describe("Tasks Controller", () => {
       .catch(done);
   });
 
-  it.skip("should throw an error with code 500 if accessing the database fails when get all tasks", (done) => {
-    sinon.stub(Task, 'find');
-    Task.find.throws();
+  it("should throw an error with code 500 if accessing the database fails when get all tasks", (done) => {
+    sinon.stub(Task, "find").throws(new Error("Database error")); // Simulate an error
+
     const req = {
       query: {
         status: "",
@@ -97,21 +97,30 @@ describe("Tasks Controller", () => {
 
     const res = {
       status: function (code) {
+        this.statusCode = code;
         return this;
       },
-      json: function () {},
+      json: function (data) {
+        this.data = data;
+      },
     };
 
-    TaskController.getTasks(req, res, () => {})
-      .then((res) => {
-        expect(res).to.have.an('error');
-        expect(res).to.have.property('statusCode', 500);
-      })
-      .then(() => {
-        done();
-      })
-      .catch(done);
-    Task.find.restore();
+    // Create a spy for the next function to capture the error
+    const next = (err) => {
+      try {
+        // Ensure that the error is passed to next() with the correct status code
+        expect(err).to.have.property("statusCode", 500);
+        expect(err).to.have.property("message").that.equals("Database error");
+        done(); // Finish the test
+      } catch (err) {
+        done(err); // Handle any errors in the assertions
+      }
+    };
+
+    // Call the controller function
+    TaskController.getTasks(req, res, next);
+
+    Task.find.restore(); // Always restore the stubbed method
   });
 
   it("should get a single task", (done) => {
@@ -139,6 +148,41 @@ describe("Tasks Controller", () => {
       .catch(done);
   });
 
+  it("should throw an error with code 500 if accessing the database fails when get a single task", () => {
+    sinon.stub(Task, "findById");
+    Task.findById.throws();
+
+    const req = {
+      params: {
+        taskId: "78bf3ca53d1c9d4f1e40a456",
+      },
+    };
+
+    const res = {
+      statusCode: 500,
+      status: function (code) {
+        this.statusCode = code;
+        return this;
+      },
+      json: function (data) {
+        this.data = data;
+      },
+    };
+
+    const next = (err) => {
+      try {
+        expect(err).to.have.property("statusCode", 500);
+        expect(err).to.have.property("message", "Error");
+        done();
+      } catch (err) {
+        done(err);
+      }
+    };
+
+    TaskController.getTask(req, res, next);
+    Task.findById.restore();
+  });
+
   it("should create new task", (done) => {
     const req = {
       body: {
@@ -164,6 +208,122 @@ describe("Tasks Controller", () => {
         done();
       })
       .catch(done);
+  });
+
+  it("should throw an error with code 500 if accessing the database fails when create new task", () => {
+    const taskInstance = {
+      save: sinon.stub().throws(new Error("Database error")),
+    };
+    sinon.stub(Task.prototype, "save").callsFake(taskInstance.save);
+
+    const req = {
+      body: {
+        title: "New task incoming",
+        description: "This is another new task created",
+        status: "completed",
+      },
+    };
+
+    const res = {
+      statusCode: 500,
+      status: function (code) {
+        this.statusCode = code;
+        return this;
+      },
+      json: function (data) {
+        this.data = data;
+      },
+    };
+
+    const next = (err) => {
+      try {
+        expect(err).to.have.property(500);
+        expect(err).to.have.property("message", "Database error");
+        done();
+      } catch (err) {
+        done(err);
+      }
+    };
+
+    TaskController.createTask(req, res, next);
+    Task.prototype.save.restore();
+  });
+
+  it("should throw an error with code 500 if accessing the database fails when update task", () => {
+    const taskInstance = {
+      save: sinon.stub().throws(new Error("Database error")),
+    };
+    sinon.stub(Task.prototype, "save").callsFake(taskInstance.save);
+
+    const req = {
+      params: {
+        taskId: "78bf3ca53d1c9d4f1e40a478",
+      },
+      body: {
+        title: "Task 3.1",
+        description: "This is task 3.1",
+        status: "completed",
+      },
+    };
+
+    const res = {
+      statusCode: 500,
+      status: function (code) {
+        this.statusCode = code;
+        return this;
+      },
+      json: function (data) {
+        this.data = data;
+      },
+    };
+
+    const next = (err) => {
+      try {
+        expect(err).to.have.property(500);
+        expect(err).to.have.property("message", "Database error");
+        done();
+      } catch (err) {
+        done(err);
+      }
+    };
+
+    TaskController.updateTask(req, res, next);
+    Task.prototype.save.restore();
+  });
+
+  it("should throw an error with code 500 if accessing the database fails when delete task", () => {
+    sinon.stub(Task, "findByIdAndDelete");
+    Task.findByIdAndDelete.throws();
+
+    const req = {
+      params: {
+        taskId: "78bf3ca53d1c9d4f1e40a478",
+      },
+    };
+
+    const res = {
+      statusCode: 500,
+      status: function (code) {
+        this.statusCode = code;
+        return this;
+      },
+      json: function (data) {
+        this.data = data;
+      },
+    };
+
+    const next = (err) => {
+      try {
+        expect(err).to.have.property(500);
+        expect(err).to.have.property("message", "Database error");
+        done();
+      } catch (err) {
+        done(err);
+      }
+    };
+
+    TaskController.deleteTask(req, res, next);
+    Task.findByIdAndDelete.restore();
   });
 
   it("should update task", (done) => {
