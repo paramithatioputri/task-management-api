@@ -5,7 +5,7 @@
   "main": "app.js",
   "scripts": {
     "start": "nodemon app.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "mocha"
   },
   "repository": {
     "type": "git",
@@ -18,7 +18,10 @@
   },
   "homepage": "https://github.com/paramithatioputri/task-management-api#readme",
   "devDependencies": {
-    "nodemon": "^3.1.9"
+    "chai": "^3.5.0",
+    "mocha": "^11.1.0",
+    "nodemon": "^3.1.9",
+    "sinon": "^19.0.2"
   },
   "dependencies": {
     "body-parser": "^1.20.3",

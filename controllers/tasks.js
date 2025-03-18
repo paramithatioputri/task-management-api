@@ -3,15 +3,15 @@ const Task = require("../models/task");
 
 exports.getTasks = async (req, res, next) => {
   const status = req.query.status;
-  const sortBy = req.query.sortBy || 'asc';
+  const sortBy = req.query.sortBy || "asc";
 
   try {
     let tasks;
 
     if (status) {
-      tasks = await Task.find({ status: status }).sort({dueDate: sortBy});
+      tasks = await Task.find({ status: status }).sort({ dueDate: sortBy });
     } else {
-      tasks = await Task.find().sort({dueDate: sortBy});
+      tasks = await Task.find().sort({ dueDate: sortBy });
     }
 
     if (!tasks) {
@@ -21,6 +21,7 @@ exports.getTasks = async (req, res, next) => {
     }
 
     res.status(200).json({ status: "SUCCESS", tasks: tasks });
+    return tasks;
   } catch (err) {
     if (!err.statusCode) {
       err.statusCode = 500;
@@ -42,6 +43,7 @@ exports.getTask = async (req, res, next) => {
     }
 
     res.status(200).json({ status: "SUCCESS", task: task });
+    return task;
   } catch (err) {
     if (!err.statusCode) {
       err.statusCode = 500;
@@ -72,9 +74,10 @@ exports.createTask = async (req, res, next) => {
       dueDate: new Date(tempDueDate),
     });
 
-    await task.save();
+    const taskSaved = await task.save();
 
     res.status(201).json({ status: "SUCCESS", message: "New task created!" });
+    return taskSaved;
   } catch (err) {
     if (!err.statusCode) {
       err.statusCode = 500;
@@ -105,11 +108,13 @@ exports.updateTask = async (req, res, next) => {
     task.description = description;
     task.status = status;
     task.dueDate = dueDate;
-    await task.save();
+    const taskSaved = await task.save();
 
     res
       .status(200)
       .json({ status: "SUCCESS", message: "Task has been updated!" });
+
+    return taskSaved;
   } catch (err) {
     if (!err.statusCode) {
       err.statusCode = 500;
